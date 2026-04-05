@@ -1,11 +1,15 @@
 variable "aws_region" {
-  default = "eu-north-1"
+  description = "AWS region where resources will be created"
+  type        = string
 }
 
 variable "my_ip" {
-  description = "IP-ul tau public"
+  description = "Your public IP in CIDR format (for SSH access)"
+  type        = string
 }
 
 variable "public_key_path" {
-  default = "~/.ssh/id_rsa.pub"
+  description = "Path to your SSH public key"
+  type        = string
+  default     = "~/.ssh/id_rsa.pub"
 }
