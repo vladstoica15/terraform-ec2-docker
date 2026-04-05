@@ -1,3 +1,62 @@
+# -------------------
+# VPC
+# -------------------
+resource "aws_vpc" "devops_vpc" {
+  cidr_block = "10.0.0.0/16"
+
+  tags = {
+    Name = "devops-vpc"
+  }
+}
+
+# -------------------
+# Public Subnet
+# -------------------
+resource "aws_subnet" "devops_subnet" {
+  vpc_id                  = aws_vpc.devops_vpc.id
+  cidr_block              = "10.0.1.0/24"
+  map_public_ip_on_launch = true
+
+  tags = {
+    Name = "devops-public-subnet"
+  }
+}
+
+# -------------------
+# Internet Gateway
+# -------------------
+resource "aws_internet_gateway" "devops_igw" {
+  vpc_id = aws_vpc.devops_vpc.id
+
+  tags = {
+    Name = "devops-igw"
+  }
+}
+
+# -------------------
+# Route Table
+# -------------------
+resource "aws_route_table" "devops_rt" {
+  vpc_id = aws_vpc.devops_vpc.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.devops_igw.id
+  }
+
+  tags = {
+    Name = "devops-route-table"
+  }
+}
+
+# -------------------
+# Route Table Association
+# -------------------
+resource "aws_route_table_association" "devops_rta" {
+  subnet_id      = aws_subnet.devops_subnet.id
+  route_table_id = aws_route_table.devops_rt.id
+}
+
 # Get latest Ubuntu AMI (works in any region)
 data "aws_ami" "ubuntu" {
   most_recent = true
@@ -24,6 +83,8 @@ resource "aws_key_pair" "devops_key" {
 resource "aws_security_group" "devops_sg" {
   name        = "devops-terraform-sg"
   description = "Allow SSH and HTTP"
+
+  vpc_id = aws_vpc.devops_vpc.id
 
   ingress {
     description = "SSH from my IP"
@@ -55,6 +116,7 @@ resource "aws_instance" "devops_server" {
   ami                    = data.aws_ami.ubuntu.id
   instance_type          = "t3.micro"
   key_name               = aws_key_pair.devops_key.key_name
+  subnet_id              = aws_subnet.devops_subnet.id
   vpc_security_group_ids = [aws_security_group.devops_sg.id]
 
   user_data = file("${path.module}/user_data.sh")
